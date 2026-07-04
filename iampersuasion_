@@ -1,35 +1,174 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AutoPunchGUI"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = playerGui
+
+local isMobile = GuiService:IsTenFootInterface() or (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = true
+mainFrame.Parent = screenGui
+
+if isMobile then
+    mainFrame.Size = UDim2.new(0.34, 0, 0, 155)
+    mainFrame.Position = UDim2.new(0.5, 0, 0.55, 0)
+else
+    mainFrame.Size = UDim2.new(0, 270, 0, 165)
+    mainFrame.Position = UDim2.new(0.5, -135, 0.35, 0)
+end
+
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
+
+-- Title Bar
+local titleBar = Instance.new("Frame", mainFrame)
+titleBar.Size = UDim2.new(1, 0, 0, 38)
+titleBar.BackgroundTransparency = 1
+
+local title = Instance.new("TextLabel", titleBar)
+title.Size = UDim2.new(1, -45, 1, 0)
+title.BackgroundTransparency = 1
+title.Text = "Auto Punch + Rings"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+
+local minimizeButton = Instance.new("TextButton", titleBar)
+minimizeButton.Size = UDim2.new(0, 32, 0, 32)
+minimizeButton.Position = UDim2.new(1, -38, 0, 3)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+minimizeButton.Text = "–"
+minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeButton.TextScaled = true
+minimizeButton.Font = Enum.Font.GothamBold
+Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(0, 8)
+
+-- Toggle Button
+local toggleButton = Instance.new("TextButton", mainFrame)
+toggleButton.Size = UDim2.new(0.85, 0, 0, 52)
+toggleButton.Position = UDim2.new(0.075, 0, 0.37, 0)
+toggleButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+toggleButton.Text = "OFF"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextScaled = true
+toggleButton.Font = Enum.Font.GothamSemibold
+Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 10)
+
+-- Status
+local statusLabel = Instance.new("TextLabel", mainFrame)
+statusLabel.Size = UDim2.new(1, 0, 0, 32)
+statusLabel.Position = UDim2.new(0, 0, 0.78, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Status: Disabled"
+statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+statusLabel.TextScaled = true
+statusLabel.Font = Enum.Font.Gotham
+
+-- Floating Show Button (for mobile)
+local floatButton = Instance.new("TextButton", screenGui)
+floatButton.Size = UDim2.new(0, 50, 0, 50)
+floatButton.Position = UDim2.new(0, 20, 0.5, -60)
+floatButton.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+floatButton.Text = "AP"
+floatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+floatButton.TextScaled = true
+floatButton.Font = Enum.Font.GothamBold
+floatButton.Visible = false
+Instance.new("UICorner", floatButton).CornerRadius = UDim.new(1, 0)
+
+local enabled = false
+local taskHandles = {}
+
+local function showNotification(message, state)
+    local notif = Instance.new("TextLabel", screenGui)
+    notif.Size = UDim2.new(0.65, 0, 0, 45)
+    notif.Position = UDim2.new(0.5, 0, 0.12, 0)
+    notif.AnchorPoint = Vector2.new(0.5, 0)
+    notif.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    notif.Text = message .. (state and " ENABLED ✅" or " DISABLED ❌")
+    notif.TextColor3 = state and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 80, 80)
+    notif.TextScaled = true
+    notif.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", notif)
+    
+    game:GetService("TweenService"):Create(notif, TweenInfo.new(2.8), {Position = UDim2.new(0.5, 0, 0.04, 0), BackgroundTransparency = 1, TextTransparency = 1}):Play()
+    game:GetService("Debris"):AddItem(notif, 3)
+end
+
 local function autoPunchFeature(state)
     showNotification("Auto Punch + Rings", state)
     if state then
-        -- Auto Punch (Slower)
         taskHandles.punch = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
-            while true do
-                pcall(function()
-                    mainKeys:FireServer("Punch")
-                end)
-                task.wait(0.25)   -- Slowed down as requested
-            end
+            while true do pcall(function() mainKeys:FireServer("Punch") end) task.wait(0.25) end
         end)
-        
-        -- Auto Rings (Permanent)
         taskHandles.rings = task.spawn(function()
             local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
-            while true do
-                pcall(function()
-                    mainKeys:FireServer("Rings")
-                end)
-                task.wait(0.4)
-            end
+            while true do pcall(function() mainKeys:FireServer("Rings") end) task.wait(0.4) end
         end)
     else
-        if taskHandles.punch then
-            task.cancel(taskHandles.punch)
-            taskHandles.punch = nil
-        end
-        if taskHandles.rings then
-            task.cancel(taskHandles.rings)
-            taskHandles.rings = nil
-        end
+        if taskHandles.punch then task.cancel(taskHandles.punch) taskHandles.punch = nil end
+        if taskHandles.rings then task.cancel(taskHandles.rings) taskHandles.rings = nil end
     end
 end
+
+-- Toggle
+toggleButton.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    if enabled then
+        toggleButton.BackgroundColor3 = Color3.fromRGB(50, 220, 50)
+        toggleButton.Text = "ON"
+        statusLabel.Text = "Status: Enabled"
+    else
+        toggleButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+        toggleButton.Text = "OFF"
+        statusLabel.Text = "Status: Disabled"
+    end
+    autoPunchFeature(enabled)
+end)
+
+-- Minimize / Hide
+minimizeButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    floatButton.Visible = true
+end)
+
+-- Show from floating button
+floatButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    floatButton.Visible = false
+end)
+
+-- PC Hotkey
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        enabled = not enabled
+        if enabled then
+            toggleButton.BackgroundColor3 = Color3.fromRGB(50, 220, 50)
+            toggleButton.Text = "ON"
+            statusLabel.Text = "Status: Enabled"
+        else
+            toggleButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+            toggleButton.Text = "OFF"
+            statusLabel.Text = "Status: Disabled"
+        end
+        autoPunchFeature(enabled)
+    end
+end)
+
+print("✅ Auto Punch + Rings GUI Loaded | RightShift to toggle | Tap – to hide")
