@@ -1,0 +1,35 @@
+local function autoPunchFeature(state)
+    showNotification("Auto Punch + Rings", state)
+    if state then
+        -- Auto Punch (Slower)
+        taskHandles.punch = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                pcall(function()
+                    mainKeys:FireServer("Punch")
+                end)
+                task.wait(0.25)   -- Slowed down as requested
+            end
+        end)
+        
+        -- Auto Rings (Permanent)
+        taskHandles.rings = task.spawn(function()
+            local mainKeys = ReplicatedStorage:WaitForChild("events"):WaitForChild("MainKeys")
+            while true do
+                pcall(function()
+                    mainKeys:FireServer("Rings")
+                end)
+                task.wait(0.4)
+            end
+        end)
+    else
+        if taskHandles.punch then
+            task.cancel(taskHandles.punch)
+            taskHandles.punch = nil
+        end
+        if taskHandles.rings then
+            task.cancel(taskHandles.rings)
+            taskHandles.rings = nil
+        end
+    end
+end
